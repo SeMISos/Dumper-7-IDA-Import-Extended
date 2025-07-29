@@ -29,11 +29,18 @@ FileFormat:
 
 An '.idmap' file is just an array of Identifiers. All the plugin does is give variables/functions at a certain offset a certain name.
 
+struct Param
+{
+	uint16 NameLength;
+	const char Name[NameLength]; // Not NULL-terminated
+}
+
 struct Identifier
 {
     uint32 Offset; // Relative to Imagebase
     uint16 NameLength;
     const char Name[NameLength]; // Not NULL-terminated
+	uint16 ParamsCount; // Number of parameters for the function.
 };
 )";
 }
@@ -81,6 +88,21 @@ void IDAMappingGenerator::GenerateClassFunctions(StreamType& IdmapFile, UEClass 
 		WriteToStream(IdmapFile, Offset);
 		WriteToStream(IdmapFile, NameLen);
 		WriteToStream(IdmapFile, MangledName.c_str(), NameLen);
+
+
+		std::vector<UEProperty> Params = Func.GetProperties();
+		uint16 paramsCount = static_cast<uint16>(Params.size());
+
+		WriteToStream(IdmapFile, paramsCount);
+
+		for (UEProperty prop : Func.GetProperties())
+		{
+			std::string ParamName = prop.GetValidName();
+			std::cout << ParamName << std::endl;
+			uint16 ParamNameLen = static_cast<uint16>(ParamName.length());
+			WriteToStream(IdmapFile, ParamNameLen);
+			WriteToStream(IdmapFile, ParamName.c_str(), ParamNameLen);
+		}
 	}
 }
 
